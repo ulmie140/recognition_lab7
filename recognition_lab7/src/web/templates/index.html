@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Методы распознавания (ЛР №7)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen p-8 font-sans">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold text-indigo-400 mb-2">Методы распознавания в экспертной системе</h1>
+        <p class="text-gray-400 mb-8">Лабораторная работа №3. Классификация: «Спорткары» (Класс 1) vs «Внедорожники» (Класс 2)</p>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Ввод данных -->
+            <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
+                <h2 class="text-xl font-semibold mb-4 text-white">Ввод признаков нового объекта</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400">1. Мощность (л.с.)</label>
+                        <input type="number" id="f1" value="300" class="w-full bg-gray-700 rounded p-2 text-white outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400">2. Разгон до 100 км/ч (сек)</label>
+                        <input type="number" id="f2" step="0.1" value="5.5" class="w-full bg-gray-700 rounded p-2 text-white outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400">3. Клиренс (мм)</label>
+                        <input type="number" id="f3" value="150" class="w-full bg-gray-700 rounded p-2 text-white outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400">4. Масса (кг)</label>
+                        <input type="number" id="f4" value="1600" class="w-full bg-gray-700 rounded p-2 text-white outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400">5. Расход топлива (л/100 км)</label>
+                        <input type="number" id="f5" step="0.1" value="12.0" class="w-full bg-gray-700 rounded p-2 text-white outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <button id="recognizeBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded mt-4 transition">
+                        Распознать объект
+                    </button>
+                </div>
+            </div>
+
+            <!-- Результаты -->
+            <div class="space-y-6">
+                <!-- Метод минимального расстояния -->
+                <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
+                    <h3 class="text-lg font-semibold text-indigo-300 mb-2">Метод минимального расстояния</h3>
+                    <p class="text-sm text-gray-400 mb-4">Основан на сравнении с прототипами классов.</p>
+                    <div class="flex justify-between text-sm mb-2">
+                        <span>Функция D1 (Спорткары): <span id="md_d1" class="font-mono text-white">0</span></span>
+                        <span>Функция D2 (Внедорожники): <span id="md_d2" class="font-mono text-white">0</span></span>
+                    </div>
+                    <div class="mt-4 p-4 rounded bg-gray-700 text-center">
+                        <span class="text-gray-300 block text-sm mb-1">Решение:</span>
+                        <span id="md_result" class="text-2xl font-bold text-white">-</span>
+                    </div>
+                </div>
+
+                <!-- Алгоритм восприятия (Перцептрон) -->
+                <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
+                    <h3 class="text-lg font-semibold text-pink-300 mb-2">Разделяющая функция (Алгоритм восприятия)</h3>
+                    <p class="text-sm text-gray-400 mb-2">Основан на построении границы между классами.</p>
+                    <p id="perc_eq" class="text-xs font-mono text-gray-500 mb-4 overflow-x-auto whitespace-nowrap"></p>
+                    <div class="text-sm mb-4">
+                        <span>Значение D12: <span id="perc_d12" class="font-mono text-white">0</span></span>
+                        <p class="text-xs text-gray-500 mt-1">(D12 > 0 — Спорткар, D12 < 0 — Внедорожник)</p>
+                    </div>
+                    <div class="p-4 rounded bg-gray-700 text-center">
+                        <span class="text-gray-300 block text-sm mb-1">Решение:</span>
+                        <span id="perc_result" class="text-2xl font-bold text-white">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const btn = document.getElementById('recognizeBtn');
+        btn.addEventListener('click', async () => {
+            const data = {
+                f1: document.getElementById('f1').value,
+                f2: document.getElementById('f2').value,
+                f3: document.getElementById('f3').value,
+                f4: document.getElementById('f4').value,
+                f5: document.getElementById('f5').value
+            };
+
+            const res = await fetch('/api/recognize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).then(r => r.json());
+
+            // Вывод метода мин. расстояния
+            document.getElementById('md_d1').innerText = res.min_distance.d1;
+            document.getElementById('md_d2').innerText = res.min_distance.d2;
+            document.getElementById('md_result').innerText = res.min_distance.predicted_class === 1 ? "Класс 1: Спорткар" : "Класс 2: Внедорожник";
+            document.getElementById('md_result').className = res.min_distance.predicted_class === 1 ? "text-2xl font-bold text-blue-400" : "text-2xl font-bold text-green-400";
+
+            // Вывод перцептрона
+            document.getElementById('perc_eq').innerText = res.perceptron.equation;
+            document.getElementById('perc_d12').innerText = res.perceptron.d12;
+            document.getElementById('perc_result').innerText = res.perceptron.predicted_class === 1 ? "Класс 1: Спорткар" : "Класс 2: Внедорожник";
+            document.getElementById('perc_result').className = res.perceptron.predicted_class === 1 ? "text-2xl font-bold text-blue-400" : "text-2xl font-bold text-green-400";
+        });
+
+        // Стартовый расчет
+        btn.click();
+    </script>
+</body>
+</html>
